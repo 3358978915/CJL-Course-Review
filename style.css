@@ -241,3 +241,41 @@ body.modal-open::before {
 .review-access-message.hidden{display:none}
 button:disabled{opacity:.6;cursor:wait}
 @media(max-width:700px){.auth-panel{display:block}.auth-form{align-items:stretch;flex-direction:column}.auth-form input{width:100%}.auth-form .primary-button{align-self:flex-start}}
+
+/* Average ratings shown in each course preview card */
+.course-card-ratings { font-size: 0.82rem; line-height: 1.5; color: var(--muted, #555); overflow-wrap: anywhere; }
+
+
+/* Rating averages shown directly on each course preview card */
+.course-card-ratings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.course-card-rating {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.course-card-rating-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.course-card-rating-value {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+.course-card-stats { color: #4267a9; }
+@media (max-width: 420px) {
+  .course-card-ratings { gap: 5px; }
+  .course-card-rating { padding: 8px 5px; }
+  .course-card-rating-label { font-size: 0.68rem; }
+}
