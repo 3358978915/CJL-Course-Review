@@ -19,20 +19,26 @@
       <section id="authPanel" class="auth-panel" aria-live="polite">
         <div id="signedOutView">
           <h2 data-i18n="loginTitle">Student login</h2>
-          <p data-i18n="loginDescription">Enter your Waseda email to receive a one-time code.</p>
+          <p data-i18n="loginDescription">Enter your Waseda email and click the sign-in link sent to your inbox.</p>
           <form id="sendCodeForm" class="auth-form">
             <label for="emailInput" data-i18n="emailLabel">Waseda email</label>
             <input id="emailInput" type="email" autocomplete="email" required placeholder="name@waseda.jp">
-            <button id="sendCodeButton" type="submit" class="primary-button" data-i18n="sendCode">Send code</button>
+            <button id="sendCodeButton" type="submit" class="primary-button" data-i18n="sendCode">Send sign-in link</button>
           </form>
-          <form id="verifyCodeForm" class="auth-form hidden">
-            <label for="otpInput" data-i18n="codeLabel">Email verification code</label>
-            <input id="otpInput" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required maxlength="8" placeholder="123456">
-            <button type="submit" class="primary-button" data-i18n="verifyCode">Verify and log in</button>
-            <button id="changeEmailButton" type="button" class="text-button" data-i18n="changeEmail">Use another email</button>
-          </form>
-          <p id="authMessage" class="notice" role="status"></p>
+<p id="authMessage" class="notice" role="status"></p>
         </div>
+        <details id="developerLoginPanel" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
+          <summary data-i18n="developerLogin" style="cursor:pointer;font-weight:600;">Developer login (demo testing)</summary>
+          <p data-i18n="developerLoginHelp">Use a test account created in Supabase Dashboard. This does not bypass database security.</p>
+          <form id="developerLoginForm" class="auth-form">
+            <label for="developerEmailInput" data-i18n="developerEmail">Test account email</label>
+            <input id="developerEmailInput" type="email" autocomplete="username" required placeholder="test@example.com">
+            <label for="developerPasswordInput" data-i18n="developerPassword">Password</label>
+            <input id="developerPasswordInput" type="password" autocomplete="current-password" required>
+            <button id="developerLoginButton" type="submit" class="secondary-button" data-i18n="developerSignIn">Sign in with test account</button>
+          </form>
+          <p id="developerAuthMessage" class="notice" role="status"></p>
+        </details>
         <div id="signedInView" class="hidden">
           <p><span data-i18n="signedInAs">Signed in as</span> <strong id="signedInEmail"></strong></p>
           <button id="signOutButton" type="button" class="secondary-button" data-i18n="signOut">Sign out</button>
