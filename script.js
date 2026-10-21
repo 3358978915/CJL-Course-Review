@@ -28,7 +28,7 @@ const translations = {
     veryDifficult:"1 — Very difficult", difficult:"2 — Difficult", easy:"4 — Easy", veryEasy:"5 — Very easy", veryLow:"1 — Very low", low:"2 — Low", average:"3 — Average", high:"4 — High", veryHigh:"5 — Very high",
     submit:"Submit review", noRatings:"No reviews yet", ratingSummary:"satisfaction", reviewSingular:"review", reviewPlural:"reviews",
     loadError:"Could not load courses. Please check the connection and permissions.", invalidRating:"Ratings must be between 1 and 5.",
-    loginTitle:"Student login", loginDescription:"Enter your Waseda email to receive a one-time code.", emailLabel:"Waseda email", sendCode:"Send code",
+    loginTitle:"Student login", loginDescription:"Enter your Waseda email and click the sign-in link sent to your inbox.", emailLabel:"Waseda email", sendCode:"Send sign-in link",
     codeLabel:"Email verification code", verifyCode:"Verify and log in", changeEmail:"Use another email", signedInAs:"Signed in as", signOut:"Sign out",
     emailDomainError:"Use an approved Waseda email address.", codeSent:"A code was sent if the address is eligible. Check your inbox and spam folder.",
     loginRequired:"Sign in with your Waseda email to submit a review.", alreadyReviewed:"You have already reviewed this course with this account.",
@@ -36,7 +36,8 @@ const translations = {
     reviewSaved:"Your review has been submitted.", oneReviewRule:"Each signed-in account can submit one review per course.",
     sendCodeError:"Could not send the code. Check the email settings and try again.", verifyCodeError:"That code is invalid or expired. Request a new code.",
     signedOut:"You have signed out.", signOutError:"Could not sign out. Please try again.", otpPrompt:"Enter the code from your email.",
-    duplicateReview:"This account already has a review for this course.", reviewDate:"Submitted", genericError:"Something went wrong. Please try again."
+    duplicateReview:"This account already has a review for this course.", reviewDate:"Submitted", genericError:"Something went wrong. Please try again.",
+    developerLogin:"Developer login (demo testing)", developerLoginHelp:"Use a test account created in Supabase Dashboard. This does not bypass database security.", developerEmail:"Test account email", developerPassword:"Password", developerSignIn:"Sign in with test account", developerLoginError:"Test login failed. Check the email and password, and confirm the user exists in Supabase."
   },
   zh: {
     brand:"课程评价", subtitle:"课程反馈平台", search:"搜索课程名称或教员姓名……",
@@ -49,7 +50,7 @@ const translations = {
     veryDifficult:"1 — 非常困难", difficult:"2 — 困难", easy:"4 — 容易", veryEasy:"5 — 非常容易", veryLow:"1 — 非常低", low:"2 — 低", average:"3 — 一般", high:"4 — 高", veryHigh:"5 — 非常高",
     submit:"提交评价", noRatings:"暂无评价", ratingSummary:"满意度", reviewSingular:"条评价", reviewPlural:"条评价",
     loadError:"课程加载失败，请检查网络连接和读取权限。", invalidRating:"评分必须在 1 到 5 之间。",
-    loginTitle:"学生登录", loginDescription:"输入你的早稻田邮箱以接收一次性验证码。", emailLabel:"早稻田邮箱", sendCode:"发送验证码",
+    loginTitle:"学生登录", loginDescription:"输入早稻田邮箱，点击邮件中的登录链接即可登录。", emailLabel:"早稻田邮箱", sendCode:"发送登录链接",
     codeLabel:"邮箱验证码", verifyCode:"验证并登录", changeEmail:"更换邮箱", signedInAs:"当前登录账号：", signOut:"退出登录",
     emailDomainError:"请输入获准使用的早稻田邮箱地址。", codeSent:"如果该邮箱符合要求，验证码已发送。请检查收件箱和垃圾邮件。",
     loginRequired:"请使用早稻田邮箱登录后再提交评价。", alreadyReviewed:"你已使用当前账号评价过这门课程。",
@@ -57,7 +58,8 @@ const translations = {
     reviewSaved:"评价已提交。", oneReviewRule:"每个登录账号对每门课程只能提交一条评价。",
     sendCodeError:"验证码发送失败，请检查邮箱设置后重试。", verifyCodeError:"验证码无效或已过期，请重新获取验证码。",
     signedOut:"已退出登录。", signOutError:"退出登录失败，请重试。", otpPrompt:"请输入邮件中的验证码。",
-    duplicateReview:"当前账号已经评价过这门课程。", reviewDate:"提交时间", genericError:"发生错误，请重试。"
+    duplicateReview:"当前账号已经评价过这门课程。", reviewDate:"提交时间", genericError:"发生错误，请重试。",
+    developerLogin:"开发者登录（Demo 测试）", developerLoginHelp:"请使用在 Supabase Dashboard 中创建的测试账号。此入口不会绕过数据库安全策略。", developerEmail:"测试账号邮箱", developerPassword:"密码", developerSignIn:"使用测试账号登录", developerLoginError:"测试账号登录失败。请检查邮箱和密码，并确认该用户已在 Supabase 中创建。"
   }
 };
 
@@ -147,9 +149,13 @@ function getVisibleCourses() {
   filtered.sort((a, b) => {
     if (sortBy === "name") return String(a["Course Name"] ?? "").localeCompare(String(b["Course Name"] ?? ""));
     const ar = getCourseReviews(a), br = getCourseReviews(b);
+    // Courses without reviews go last, so an unknown workload is not treated as zero.
     if (!ar.length && br.length) return 1;
     if (ar.length && !br.length) return -1;
-    return Number(average(br, sortBy) ?? 0) - Number(average(ar, sortBy) ?? 0);
+    if (!ar.length && !br.length) return String(a["Course Name"] ?? "").localeCompare(String(b["Course Name"] ?? ""));
+    const diff = Number(average(ar, sortBy)) - Number(average(br, sortBy));
+    // Workload is ascending (least demanding first); other score sorts remain descending.
+    return sortBy === "workload" ? diff : -diff;
   });
   return filtered;
 }
@@ -175,12 +181,31 @@ function renderCourses() {
     const instructor = document.createElement("p");
     instructor.textContent = `${t("instructor")}: ${course["Instructor"] ?? "Unknown"}`;
     const courseReviews = getCourseReviews(course);
+    const ratings = document.createElement("div");
+    ratings.className = "course-card-ratings";
+    const ratingItems = [
+      ["workload", t("workload")],
+      ["easiness", t("easiness")],
+      ["satisfaction", t("satisfaction")]
+    ];
+    ratingItems.forEach(([field, label]) => {
+      const item = document.createElement("div");
+      item.className = "course-card-rating";
+      const ratingLabel = document.createElement("span");
+      ratingLabel.className = "course-card-rating-label";
+      ratingLabel.textContent = label;
+      const ratingValue = document.createElement("strong");
+      ratingValue.className = "course-card-rating-value";
+      ratingValue.textContent = average(courseReviews, field) ?? "—";
+      item.append(ratingLabel, ratingValue);
+      ratings.appendChild(item);
+    });
     const stats = document.createElement("p");
     stats.className = "course-card-stats";
     stats.textContent = courseReviews.length
-      ? `★ ${average(courseReviews, "satisfaction")} ${t("ratingSummary")} · ${courseReviews.length} ${courseReviews.length === 1 ? t("reviewSingular") : t("reviewPlural")}`
+      ? `${courseReviews.length} ${courseReviews.length === 1 ? t("reviewSingular") : t("reviewPlural")}`
       : t("noReviews");
-    card.append(name, instructor, stats);
+    card.append(name, instructor, ratings, stats);
     list.appendChild(card);
   });
 }
@@ -271,55 +296,50 @@ $("sendCodeForm").addEventListener("submit", async (event) => {
   }
   $("sendCodeButton").disabled = true;
   try {
+    // Must be served through Live Server / a web host, not file://.
+    const redirectTo = window.location.origin + window.location.pathname;
     const { error } = await supabaseClient.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true }
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: redirectTo
+      }
     });
     if (error) throw error;
-    pendingEmail = email;
-    $("verifyCodeForm").classList.remove("hidden");
-    $("otpInput").focus();
-    message.textContent = t("codeSent");
+    message.textContent = currentLanguage === "zh"
+      ? "如果邮箱符合要求，登录链接已发送。请打开邮件并点击链接。"
+      : "If the address is eligible, a sign-in link has been sent. Open the email and click the link.";
   } catch (error) {
-    console.error("OTP send failed:", error);
+    console.error("Magic Link send failed:", error);
     message.textContent = t("sendCodeError");
   } finally {
     $("sendCodeButton").disabled = false;
   }
 });
-$("verifyCodeForm").addEventListener("submit", async (event) => {
+
+$("developerLoginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const token = $("otpInput").value.trim();
-  const email = pendingEmail || $("emailInput").value.trim().toLowerCase();
-  const message = $("authMessage");
-  if (!email || !token) {
-    message.textContent = t("otpPrompt");
-    return;
-  }
+  const email = $("developerEmailInput").value.trim().toLowerCase();
+  const password = $("developerPasswordInput").value;
+  const message = $("developerAuthMessage");
+  message.textContent = "";
+  $("developerLoginButton").disabled = true;
   try {
-    const { data, error } = await supabaseClient.auth.verifyOtp({
-      email,
-      token,
-      type: "email"
-    });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     currentUser = data.user || data.session?.user || null;
-    $("otpInput").value = "";
     message.textContent = "";
+    $("developerPasswordInput").value = "";
     updateAuthUI();
     await loadReviews();
   } catch (error) {
-    console.error("OTP verification failed:", error);
-    message.textContent = t("verifyCodeError");
+    console.error("Developer test login failed:", error);
+    message.textContent = t("developerLoginError");
+  } finally {
+    $("developerLoginButton").disabled = false;
   }
 });
-$("changeEmailButton").addEventListener("click", () => {
-  pendingEmail = "";
-  $("verifyCodeForm").classList.add("hidden");
-  $("otpInput").value = "";
-  $("authMessage").textContent = "";
-  $("emailInput").focus();
-});
+
 $("signOutButton").addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signOut();
   if (error) {
