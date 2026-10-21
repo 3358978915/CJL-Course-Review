@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Reviews</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" data-i18n="brand">Course Reviews</div>
+      <div class="subtitle" data-i18n="subtitle">Course feedback platform</div>
+      <button id="languageToggle" class="language-toggle" type="button" aria-label="Switch language">中文</button>
+    </header>
+    <main class="main">
+      <section id="authPanel" class="auth-panel" aria-live="polite">
+        <div id="signedOutView">
+          <h2 data-i18n="loginTitle">Student login</h2>
+          <p data-i18n="loginDescription">Enter your Waseda email to receive a one-time code.</p>
+          <form id="sendCodeForm" class="auth-form">
+            <label for="emailInput" data-i18n="emailLabel">Waseda email</label>
+            <input id="emailInput" type="email" autocomplete="email" required placeholder="name@waseda.jp">
+            <button id="sendCodeButton" type="submit" class="primary-button" data-i18n="sendCode">Send code</button>
+          </form>
+          <form id="verifyCodeForm" class="auth-form hidden">
+            <label for="otpInput" data-i18n="codeLabel">Email verification code</label>
+            <input id="otpInput" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required maxlength="8" placeholder="123456">
+            <button type="submit" class="primary-button" data-i18n="verifyCode">Verify and log in</button>
+            <button id="changeEmailButton" type="button" class="text-button" data-i18n="changeEmail">Use another email</button>
+          </form>
+          <p id="authMessage" class="notice" role="status"></p>
+        </div>
+        <div id="signedInView" class="hidden">
+          <p><span data-i18n="signedInAs">Signed in as</span> <strong id="signedInEmail"></strong></p>
+          <button id="signOutButton" type="button" class="secondary-button" data-i18n="signOut">Sign out</button>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search courses or instructors..." aria-label="Search courses or instructors" data-i18n-placeholder="search">
+        <select id="categoryFilter" aria-label="Filter by category">
+          <option value="" data-i18n="allCategories">All categories</option>
+          <option value="Grammar" data-i18n="catGrammar">Grammar</option>
+          <option value="Written Expression" data-i18n="catWrittenExpression">Written Expression</option>
+          <option value="Reading Comprehension" data-i18n="catReadingComprehension">Reading Comprehension</option>
+          <option value="Listening Comprehension" data-i18n="catListeningComprehension">Listening Comprehension</option>
+          <option value="Society and Culture" data-i18n="catSocietyCulture">Society and Culture</option>
+          <option value="Oral Expression" data-i18n="catOralExpression">Oral Expression</option>
+          <option value="Vocabulary" data-i18n="catVocabulary">Vocabulary</option>
+          <option value="Business Japanese" data-i18n="catBusinessJapanese">Business Japanese</option>
+          <option value="Academic Japanese" data-i18n="catAcademicJapanese">Academic Japanese</option>
+          <option value="Japanese for 'Zero' Beginners" data-i18n="catZeroBeginners">Japanese for 'Zero' Beginners</option>
+          <option value="Skill-based Japanese(Kanji)" data-i18n="catKanji">Skill-based Japanese(Kanji)</option>
+          <option value="Skill-based Japanese(Conversation)" data-i18n="catConversation">Skill-based Japanese(Conversation)</option>
+          <option value="Nihongo" data-i18n="catNihongo">Nihongo</option>
+          <option value="Comprehensive Japanese" data-i18n="catComprehensiveJapanese">Comprehensive Japanese</option>
+        </select>
+        <select id="sortSelect" aria-label="Sort courses">
+          <option value="name" data-i18n="sortName">Course name</option>
+          <option value="workload" data-i18n="sortWorkload">Workload</option>
+          <option value="easiness" data-i18n="sortEasiness">Easiness</option>
+          <option value="satisfaction" data-i18n="sortSatisfaction">Satisfaction</option>
+        </select>
+      </section>
+      <div id="course-list"></div>
+      <section id="courseDetails" class="details hidden">
+        <button id="backButton" class="back-button" type="button" data-i18n="back">← Back to courses</button>
+        <h2 id="detailCourseName"></h2>
+        <p id="detailInstructor" class="muted"></p>
+        <div class="rating-grid">
+          <div class="rating-box"><span class="rating-label" data-i18n="workload">Workload</span><strong id="detailWorkload">—</strong><span class="muted" data-i18n="workloadScale">1 = light · 5 = heavy</span></div>
+          <div class="rating-box"><span class="rating-label" data-i18n="easiness">Easiness</span><strong id="detailEasiness">—</strong><span class="muted" data-i18n="easinessScale">1 = difficult · 5 = easy</span></div>
+          <div class="rating-box"><span class="rating-label" data-i18n="satisfaction">Satisfaction</span><strong id="detailSatisfaction">—</strong><span class="muted" data-i18n="satisfactionScale">1 = low · 5 = high</span></div>
+        </div>
+        <h3 data-i18n="reviews">Reviews</h3>
+        <div id="reviewList" class="review-list"></div>
+        <section id="reviewAccessMessage" class="review-access-message"></section>
+        <form id="reviewForm" class="review-form hidden">
+          <label><span data-i18n="workload">Workload</span><select id="workloadInput" required><option value="1" data-i18n="veryLight">1 — Very light</option><option value="2" data-i18n="light">2 — Light</option><option value="3" selected data-i18n="moderate">3 — Moderate</option><option value="4" data-i18n="heavy">4 — Heavy</option><option value="5" data-i18n="veryHeavy">5 — Very heavy</option></select></label>
+          <label><span data-i18n="easiness">Easiness</span><select id="easinessInput" required><option value="1" data-i18n="veryDifficult">1 — Very difficult</option><option value="2" data-i18n="difficult">2 — Difficult</option><option value="3" selected data-i18n="moderate">3 — Moderate</option><option value="4" data-i18n="easy">4 — Easy</option><option value="5" data-i18n="veryEasy">5 — Very easy</option></select></label>
+          <label><span data-i18n="satisfaction">Satisfaction</span><select id="satisfactionInput" required><option value="1" data-i18n="veryLow">1 — Very low</option><option value="2" data-i18n="low">2 — Low</option><option value="3" selected data-i18n="average">3 — Average</option><option value="4" data-i18n="high">4 — High</option><option value="5" data-i18n="veryHigh">5 — Very high</option></select></label>
+          <label><span data-i18n="comment">Comment</span><textarea id="commentInput" rows="3" maxlength="500" placeholder="Share your experience (optional)" data-i18n-placeholder="commentPlaceholder"></textarea></label>
+          <button id="submitReviewButton" type="submit" class="primary-button" data-i18n="submit">Submit review</button>
+          <p class="notice" data-i18n="oneReviewRule">Each signed-in account can submit one review per course.</p>
+        </form>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
